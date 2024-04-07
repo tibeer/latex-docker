@@ -33,10 +33,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          build-args: scheme=${{ env.scheme }}
+          build-args: scheme=${{ matrix.scheme }}
           platforms: linux/amd64,linux/arm64
           load: true
-          tags: texlive-${{ env.scheme }}
+          tags: texlive-${{ matrix.scheme }}
       - name: Test pdflatex
         run: |
           docker run --rm texlive-$SCHEME pdflatex --version
@@ -71,7 +71,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          build-args: scheme=${{ env.scheme }}
+          build-args: scheme=${{ matrix.scheme }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.TAG }}:${{ env.VERSION }},${{ env.TAG }}:latest
