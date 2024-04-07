@@ -23,15 +23,34 @@ retry() {
   done
 }
 
+case "$(uname -m)" in
+  x86_64)
+    echo "binary_x86_64-linux 0" >> /texlive.profile
+    echo "binary_x86_64-linuxmusl 1" >> /texlive.profile
+    TEX_ARCH=x86_64-linuxmusl
+    ;;
+
+  aarch64)
+    echo "binary_aarch64-linux 1" >> /texlive.profile
+    TEX_ARCH=aarch64-linux
+    ;;
+
+  *)
+    echo "Unknown arch: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+
 echo "==> Install system packages"
 apk --no-cache add \
   bash \
   curl \
   fontconfig \
+  gcompat \
   ghostscript \
+  git \
   gnupg \
   gnuplot \
-  git \
   graphviz \
   make \
   openjdk21-jre-headless \
@@ -51,6 +70,8 @@ apk --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing a
   perl-file-homedir
 
 echo "==> Install TeXLive"
+mkdir -p /opt/texlive/
+ln -sf "/opt/texlive/texdir/bin/$TEX_ARCH" /opt/texlive/bin
 mkdir -p /tmp/install-tl
 cd /tmp/install-tl
 MIRROR_URL="$(curl -w "%{redirect_url}" -o /dev/null https://mirror.ctan.org/)"
@@ -76,16 +97,18 @@ if [ "$scheme" != "full" ]; then
     xindy
 fi
 
-# https://github.com/xu-cheng/latex-action/issues/32#issuecomment-626086551
-ln -sf /opt/texlive/texdir/texmf-dist/scripts/xindy/xindy.pl /opt/texlive/texdir/bin/x86_64-linuxmusl/xindy
-ln -sf /opt/texlive/texdir/texmf-dist/scripts/xindy/texindy.pl /opt/texlive/texdir/bin/x86_64-linuxmusl/texindy
-curl -OL https://sourceforge.net/projects/xindy/files/xindy-source-components/2.4/xindy-kernel-3.0.tar.gz
-tar xf xindy-kernel-3.0.tar.gz
-cd xindy-kernel-3.0/src
-apk add clisp --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
-make
-cp -f xindy.mem /opt/texlive/texdir/bin/x86_64-linuxmusl/
-cd -
+if [ "$(uname -m)" = "x86_64" ]; then
+  # https://github.com/xu-cheng/latex-action/issues/32#issuecomment-626086551
+  ln -sf /opt/texlive/texdir/texmf-dist/scripts/xindy/xindy.pl "/opt/texlive/texdir/bin/$TEX_ARCH/xindy"
+  ln -sf /opt/texlive/texdir/texmf-dist/scripts/xindy/texindy.pl "/opt/texlive/texdir/bin/$TEX_ARCH/texindy"
+  curl -OL https://sourceforge.net/projects/xindy/files/xindy-source-components/2.4/xindy-kernel-3.0.tar.gz
+  tar xf xindy-kernel-3.0.tar.gz
+  cd xindy-kernel-3.0/src
+  apk add clisp --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
+  make
+  cp -f xindy.mem "/opt/texlive/texdir/bin/$TEX_ARCH/"
+  cd -
+fi
 
 # System font configuration for XeTeX and LuaTeX
 # Ref: https://www.tug.org/texlive/doc/texlive-en/texlive-en.html#x1-330003.4.4
