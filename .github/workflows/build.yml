@@ -44,6 +44,7 @@ jobs:
           load: true
           tags: texlive-${{ matrix.scheme }}
       - name: Test pdflatex
+        working-directory: /tmp/
         run: |
           docker run --rm texlive-$SCHEME pdflatex --version
           cat <<EOF >test.tex
@@ -56,6 +57,7 @@ jobs:
           docker run --rm -v $(pwd):/data -w /data texlive-$SCHEME python3 /opt/texlive/bin/texliveonfly test.tex
           file test.pdf | grep -q ' PDF '
       - name: Test latexindent
+        working-directory: /tmp/
         run: |
           cat <<EOF >test.tex
           \documentclass{article}
