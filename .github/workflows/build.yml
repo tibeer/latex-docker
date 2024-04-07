@@ -21,7 +21,7 @@ jobs:
       - name: Setup enviroment
         run: |
           echo "SCHEME=${{ matrix.scheme }}" >> "$GITHUB_ENV"
-          echo "TAG=ghcr.io/xu-cheng/texlive-$SCHEME" >> "$GITHUB_ENV"
+          echo "TAG=ghcr.io/xu-cheng/texlive-${{ matrix.scheme }}" >> "$GITHUB_ENV"
           echo "VERSION=$(date "+%Y%m%d")"  >> "$GITHUB_ENV"
       - name: Setup Git repository
         uses: actions/checkout@v4
