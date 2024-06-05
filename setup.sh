@@ -47,16 +47,16 @@ apt-get upgrade -y
 apt-get install -y --no-install-recommends --no-install-suggests \
   curl \
   fontconfig \
-  fonts-freefont-ttf \
   ghostscript \
   git \
-  gnupg \
-  gnuplot \
+  gpg \
+  gpg-agent \
+  gnuplot-nox \
   graphviz \
   make \
   openjdk-17-jre-headless \
-  perl \
-  python3 \
+  perl-base \
+  python3-minimal \
   python3-pygments \
   tar
 
@@ -87,9 +87,11 @@ retry 3 /tmp/install-tl/installer/install-tl -scheme "scheme-$scheme" -profile=/
 if [[ $scheme != "full" ]]; then
   tlmgr install \
     collection-bibtexextra \
-    collection-binextra \
     collection-fontsrecommended \
-    collection-fontutils
+    collection-fontutils \
+    latexmk \
+    texliveonfly \
+    xindy
 fi
 
 # System font configuration for XeTeX and LuaTeX
