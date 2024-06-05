@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SCHEME: ${{ matrix.scheme }}
-      TAG: ghcr.io/xu-cheng/texlive-${{ matrix.scheme }}
+      TAG: ghcr.io/xu-cheng/texlive-${{ matrix.scheme }}-debian
     steps:
       - name: Get version
         run: |
@@ -34,10 +34,10 @@ jobs:
           context: .
           build-args: scheme=${{ env.SCHEME }}
           load: true
-          tags: texlive-${{ env.SCHEME }}
+          tags: texlive-${{ env.SCHEME }}-debian
       - name: Test pdflatex
         run: |
-          docker run --rm texlive-$SCHEME pdflatex --version
+          docker run --rm texlive-$SCHEME-debian pdflatex --version
           cat <<EOF >ref.bib
           @book{knuth1997,
             author    = {Donald E. Knuth},
@@ -58,8 +58,8 @@ jobs:
           \printbibliography
           \end{document}
           EOF
-          docker run --rm -v "$(pwd):/data" -w /data texlive-$SCHEME \
-            python3 /opt/texlive/texdir/bin/x86_64-linuxmusl/texliveonfly \
+          docker run --rm -v "$(pwd):/data" -w /data texlive-$SCHEME-debian \
+            python3 /opt/texlive/bin/texliveonfly \
             -c latexmk -a "-g -pdf -halt-on-error -interaction=nonstopmode" test.tex
           file test.pdf | grep -q ' PDF '
       - name: Test latexindent
@@ -71,8 +71,7 @@ jobs:
           test
           \end{document}
           EOF
-          docker run --rm -v $(pwd):/data -w /data texlive-$SCHEME latexindent test.tex
-        if: "matrix.scheme == 'full'"
+          docker run --rm -v $(pwd):/data -w /data texlive-$SCHEME-debian latexindent test.tex
       - name: Login
         uses: docker/login-action@v3
         with:

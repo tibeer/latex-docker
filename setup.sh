@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-set -e
+set -eo pipefail
 
 scheme="$1"
 
@@ -23,34 +23,52 @@ retry() {
   done
 }
 
+case "$(uname -m)" in
+  x86_64)
+    echo "binary_x86_64-linux 1" >>/texlive.profile
+    TEX_ARCH=x86_64-linux
+    ;;
+
+  aarch64)
+    echo "binary_aarch64-linux 1" >>/texlive.profile
+    TEX_ARCH=aarch64-linux
+    ;;
+
+  *)
+    echo "Unknown arch: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+
 echo "==> Install system packages"
-apk --no-cache add \
-  bash \
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get upgrade -y
+apt-get install -y \
   curl \
   fontconfig \
+  fonts-freefont-ttf \
   ghostscript \
+  git \
   gnupg \
   gnuplot \
-  git \
   graphviz \
   make \
-  openjdk21-jre-headless \
+  openjdk-17-jre-headless \
   perl \
-  py-pygments \
   python3 \
-  tar \
-  ttf-freefont \
-  wget \
-  xz
+  python3-pygments \
+  tar
 
 # Dependencies needed by latexindent
-apk --no-cache add \
-  perl-unicode-linebreak \
-  perl-yaml-tiny
-apk --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing add \
-  perl-file-homedir
+apt-get install -y \
+  libfile-homedir-perl \
+  libunicode-linebreak-perl \
+  libyaml-tiny-perl
 
 echo "==> Install TeXLive"
+mkdir -p /opt/texlive/
+ln -sf "/opt/texlive/texdir/bin/$TEX_ARCH" /opt/texlive/bin
 mkdir -p /tmp/install-tl
 cd /tmp/install-tl
 MIRROR_URL="$(curl -fsS -w "%{redirect_url}" -o /dev/null https://mirror.ctan.org/)"
@@ -66,27 +84,13 @@ tar --strip-components 1 -zxf /tmp/install-tl/install-tl-unx.tar.gz -C /tmp/inst
 retry 3 /tmp/install-tl/installer/install-tl -scheme "scheme-$scheme" -profile=/texlive.profile
 
 # Install additional packages for non full scheme
-if [ "$scheme" != "full" ]; then
+if [[ $scheme != "full" ]]; then
   tlmgr install \
+    collection-bibtexextra \
+    collection-binextra \
     collection-fontsrecommended \
-    collection-fontutils \
-    biber \
-    biblatex \
-    latexmk \
-    texliveonfly \
-    xindy
+    collection-fontutils
 fi
-
-# https://github.com/xu-cheng/latex-action/issues/32#issuecomment-626086551
-ln -sf /opt/texlive/texdir/texmf-dist/scripts/xindy/xindy.pl /opt/texlive/texdir/bin/x86_64-linuxmusl/xindy
-ln -sf /opt/texlive/texdir/texmf-dist/scripts/xindy/texindy.pl /opt/texlive/texdir/bin/x86_64-linuxmusl/texindy
-curl -OL https://sourceforge.net/projects/xindy/files/xindy-source-components/2.4/xindy-kernel-3.0.tar.gz
-tar xf xindy-kernel-3.0.tar.gz
-cd xindy-kernel-3.0/src
-apk add clisp --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
-make
-cp -f xindy.mem /opt/texlive/texdir/bin/x86_64-linuxmusl/
-cd -
 
 # System font configuration for XeTeX and LuaTeX
 # Ref: https://www.tug.org/texlive/doc/texlive-en/texlive-en.html#x1-330003.4.4
@@ -94,6 +98,8 @@ ln -s /opt/texlive/texdir/texmf-var/fonts/conf/texlive-fontconfig.conf /etc/font
 fc-cache -fv
 
 echo "==> Clean up"
+apt-get autoremove -y --purge
+apt-get clean -y
 rm -rf \
   /opt/texlive/texdir/install-tl \
   /opt/texlive/texdir/install-tl.log \
