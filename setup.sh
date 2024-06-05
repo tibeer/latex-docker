@@ -44,7 +44,7 @@ echo "==> Install system packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y \
+apt-get install -y --no-install-recommends --no-install-suggests \
   curl \
   fontconfig \
   fonts-freefont-ttf \
@@ -61,7 +61,7 @@ apt-get install -y \
   tar
 
 # Dependencies needed by latexindent
-apt-get install -y \
+apt-get install -y --no-install-recommends --no-install-suggests \
   libfile-homedir-perl \
   libunicode-linebreak-perl \
   libyaml-tiny-perl
